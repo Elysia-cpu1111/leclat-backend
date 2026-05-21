@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 const { initDatabase } = require('./db');
 
 const authRoutes = require('./routes/auth');
@@ -10,21 +12,30 @@ const reviewRoutes = require('./routes/reviews');
 const wishlistRoutes = require('./routes/wishlist');
 
 const app = express();
-const path = require('path');
 const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-const fs = require('fs');
-
-// Serve frontend static files (only if dist/ exists — local dev has it, Render doesn't)
-const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
-const hasFrontend = fs.existsSync(frontendDist);
+// Serve frontend static files — try multiple paths (local dev + Render)
+const frontendPaths = [
+  path.join(__dirname, 'public'),              // Render: ./public/
+  path.join(__dirname, '..', 'frontend', 'dist'), // Local: ../frontend/dist/
+];
+let frontendDist = null;
+for (const p of frontendPaths) {
+  if (fs.existsSync(p)) {
+    frontendDist = p;
+    break;
+  }
+}
+const hasFrontend = !!frontendDist;
 if (hasFrontend) {
   app.use(express.static(frontendDist));
   console.log('Serving frontend from:', frontendDist);
+} else {
+  console.log('No frontend dist found — API only mode');
 }
 
 // API Routes
@@ -59,6 +70,6 @@ app.use((err, req, res, next) => {
 (async () => {
   await initDatabase();
   app.listen(PORT, () => {
-    console.log(`✅ L'ÉCLAT API server running on http://localhost:${PORT}`);
+    console.log(\`✅ L'ÉCLAT API server running on http://localhost:\${PORT}\`);
   });
 })();
