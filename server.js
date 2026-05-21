@@ -10,6 +10,10 @@ const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
 const reviewRoutes = require('./routes/reviews');
 const wishlistRoutes = require('./routes/wishlist');
+const addressRoutes = require('./routes/addresses');
+const bannerRoutes = require('./routes/banners');
+const couponRoutes = require('./routes/coupons');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -45,6 +49,10 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/banners', bannerRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -70,6 +78,6 @@ app.use((err, req, res, next) => {
 (async () => {
   await initDatabase();
   app.listen(PORT, () => {
-    console.log(`✅ L'ÉCLAT API server running on http://localhost:${PORT}`);
+    console.log("✅ L'ÉCLAT API running on http://localhost:" + PORT);
   });
 })();
