@@ -70,6 +70,6 @@ app.use((err, req, res, next) => {
 (async () => {
   await initDatabase();
   app.listen(PORT, () => {
-    console.log(\`✅ L'ÉCLAT API server running on http://localhost:\${PORT}\`);
+    console.log(`✅ L'ÉCLAT API server running on http://localhost:${PORT}`);
   });
 })();
