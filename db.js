@@ -131,6 +131,73 @@ async function initDatabase() {
     )
   `);
 
+  // New tables for enhanced features
+  db.run(`CREATE TABLE IF NOT EXISTS addresses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      province TEXT,
+      city TEXT,
+      district TEXT,
+      detail TEXT NOT NULL,
+      is_default INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    )
+  `);
+
+  db.run(`CREATE TABLE IF NOT EXISTS coupons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT UNIQUE NOT NULL,
+      type TEXT DEFAULT 'fixed',  -- fixed / percent
+      value REAL NOT NULL,        -- 金额或百分比
+      min_order REAL DEFAULT 0,   -- 最低消费
+      max_discount REAL,          -- 百分比券最大折扣
+      usage_limit INTEGER DEFAULT 100,
+      used_count INTEGER DEFAULT 0,
+      start_date DATETIME,
+      end_date DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`CREATE TABLE IF NOT EXISTS user_coupons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      coupon_id INTEGER NOT NULL,
+      used INTEGER DEFAULT 0,
+      used_at DATETIME,
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      FOREIGN KEY(coupon_id) REFERENCES coupons(id)
+    )
+  `);
+
+  db.run(`CREATE TABLE IF NOT EXISTS banners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      image TEXT NOT NULL,
+      title TEXT,
+      subtitle TEXT,
+      link TEXT,
+      sort_order INTEGER DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`CREATE TABLE IF NOT EXISTS password_resets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      code TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Migration: add avatar_url to users if missing
+  try { db.run('ALTER TABLE users ADD COLUMN avatar_url TEXT'); } catch(e) {}
+
   dbWrapper.init(db);
   saveDb();
   seedDatabase();
@@ -326,8 +393,28 @@ function seedDatabase() {
   allProducts.forEach(p => stmt.run(p));
   stmt.free();
 
+  // Seed banners
+  db.run('INSERT INTO banners (image, title, subtitle, link, sort_order) VALUES (?, ?, ?, ?, ?)',
+    ['https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200', '夏季臻选', '全场低至5折', '/products?sort=price_asc', 1]);
+  db.run('INSERT INTO banners (image, title, subtitle, link, sort_order) VALUES (?, ?, ?, ?, ?)',
+    ['https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200', '新品首发', '2026 春夏系列', '/products?badge=new', 2]);
+  db.run('INSERT INTO banners (image, title, subtitle, link, sort_order) VALUES (?, ?, ?, ?, ?)',
+    ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200', '腕表特辑', '瑞士工艺 经典传承', '/products?category=watches', 3]);
+
+  // Seed coupons
+  db.run('INSERT INTO coupons (code, type, value, min_order, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',
+    ['WELCOME10', 'fixed', 200, 500, '2026-01-01', '2027-12-31']);
+  db.run('INSERT INTO coupons (code, type, value, min_order, max_discount, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ['SUMMER20', 'percent', 20, 2000, 1000, '2026-01-01', '2027-12-31']);
+  db.run('INSERT INTO coupons (code, type, value, min_order, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',
+    ['VIP500', 'fixed', 500, 5000, '2026-01-01', '2027-12-31']);
+
+  // Give welcome coupon to test user
+  db.run('INSERT INTO user_coupons (user_id, coupon_id) VALUES (1, 1)');
+  db.run('INSERT INTO user_coupons (user_id, coupon_id) VALUES (1, 2)');
+
   saveDb();
-  console.log(`种子数据填充完成！6个分类，${allProducts.length}个产品，2个用户。`);
+  console.log(`种子数据填充完成！6个分类，${allProducts.length}个产品，2个用户，3个Banner，3张优惠券。`);
 }
 
 module.exports = { getDb, saveDb, initDatabase, seedDatabase };
